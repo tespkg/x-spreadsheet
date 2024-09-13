@@ -72,7 +72,22 @@ const baseFormulas = [
     render: ary => ary.reduce((a, b) => Number(a) - Number(b)),
   },
   */
-];
+  {
+    key: 'SIN',
+    title: tf('formula.sin'),
+    render: ary => Math.sin(Number(ary[0])),
+  },
+  {
+    key: 'COS',
+    title: tf('formula.cos'),
+    render: ary => Math.cos(Number(ary[0])),
+  },
+  {
+    key: "PI",
+    title:tf("formula.pi"),
+    render: ()=>Math.PI
+  }
+]
 
 const formulas = baseFormulas;
 
