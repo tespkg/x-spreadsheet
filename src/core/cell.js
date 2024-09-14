@@ -1,226 +1,127 @@
 import { expr2xy, xy2expr } from './alphabet';
 import { numberCalc } from './helper';
+import { tokenize } from 'excel-formula-tokenizer';
+import { buildTree } from 'excel-formula-ast';
 
-// Converting infix expression to a suffix expression
-// src: AVERAGE(SUM(A1,A2), B1) + 50 + B20
-// return: [A1, A2], SUM[, B1],AVERAGE,50,+,B20,+
-const infixExprToSuffixExpr = (src) => {
-  const operatorStack = [];
-  const stack = [];
-  let subStrs = []; // SUM, A1, B2, 50 ...
-  let fnArgType = 0; // 1 => , 2 => :
-  let fnArgOperator = '';
-  let fnArgsLen = 1; // A1,A2,A3...
-  let oldc = '';
-  for (let i = 0; i < src.length; i += 1) {
-    const c = src.charAt(i);
-    if (c !== ' ') {
-      if (c >= 'a' && c <= 'z') {
-        subStrs.push(c.toUpperCase());
-      } else if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || c === '.') {
-        subStrs.push(c);
-      } else if (c === '"') {
-        i += 1;
-        while (src.charAt(i) !== '"') {
-          subStrs.push(src.charAt(i));
-          i += 1;
-        }
-        stack.push(`"${subStrs.join('')}`);
-        subStrs = [];
-      } else if (c === '-' && /[+\-*/,(]/.test(oldc)) {
-        subStrs.push(c);
-      } else {
-        // console.log('subStrs:', subStrs.join(''), stack);
-        if (c !== '(' && subStrs.length > 0) {
-          stack.push(subStrs.join(''));
-        }
-        if (c === ')') {
-          let c1 = operatorStack.pop();
-          if (fnArgType === 2) {
-            // fn argument range => A1:B5
-            try {
-              const [ex, ey] = expr2xy(stack.pop());
-              const [sx, sy] = expr2xy(stack.pop());
-              // console.log('::', sx, sy, ex, ey);
-              let rangelen = 0;
-              for (let x = sx; x <= ex; x += 1) {
-                for (let y = sy; y <= ey; y += 1) {
-                  stack.push(xy2expr(x, y));
-                  rangelen += 1;
-                }
-              }
-              stack.push([c1, rangelen]);
-            } catch (e) {
-              // console.log(e);
-            }
-          } else if (fnArgType === 1 || fnArgType === 3) {
-            if (fnArgType === 3) stack.push(fnArgOperator);
-            // fn argument => A1,A2,B5
-            stack.push([c1, fnArgsLen]);
-            fnArgsLen = 1;
-          } else {
-            // console.log('c1:', c1, fnArgType, stack, operatorStack);
-            while (c1 !== '(') {
-              stack.push(c1);
-              if (operatorStack.length <= 0) break;
-              c1 = operatorStack.pop();
-            }
-          }
-          fnArgType = 0;
-        } else if (c === '=' || c === '>' || c === '<') {
-          const nc = src.charAt(i + 1);
-          fnArgOperator = c;
-          if (nc === '=' || nc === '-') {
-            fnArgOperator += nc;
-            i += 1;
-          }
-          fnArgType = 3;
-        } else if (c === ':') {
-          fnArgType = 2;
-        } else if (c === ',') {
-          if (fnArgType === 3) {
-            stack.push(fnArgOperator);
-          }
-          fnArgType = 1;
-          fnArgsLen += 1;
-        } else if (c === '(' && subStrs.length > 0) {
-          // function
-          operatorStack.push(subStrs.join(''));
-        } else {
-          // priority: */ > +-
-          // console.log('xxxx:', operatorStack, c, stack);
-          if (operatorStack.length > 0 && (c === '+' || c === '-')) {
-            let top = operatorStack[operatorStack.length - 1];
-            if (top !== '(') stack.push(operatorStack.pop());
-            if (top === '*' || top === '/') {
-              while (operatorStack.length > 0) {
-                top = operatorStack[operatorStack.length - 1];
-                if (top !== '(') stack.push(operatorStack.pop());
-                else break;
-              }
-            }
-          } else if (operatorStack.length > 0) {
-            const top = operatorStack[operatorStack.length - 1];
-            if (top === '*' || top === '/') stack.push(operatorStack.pop());
-          }
-          operatorStack.push(c);
-        }
-        subStrs = [];
-      }
-      oldc = c;
+// function indexToExcelAddress({ row, column }) {
+//   let columnPart = '';
+
+//   // Convert the column index back to letters (base-26 system)
+//   while (column > 0) {
+//     const remainder = (column - 1) % 26;
+//     columnPart = String.fromCharCode(remainder + 'A'.charCodeAt(0)) + columnPart;
+//     column = Math.floor((column - 1) / 26);
+//   }
+
+//   // Return the Excel cell address as a string (column letters + row number)
+//   return columnPart + row;
+// }
+// function excelAddressToIndex(cellAddress) {
+//   const columnPart = cellAddress.match(/[A-Z]+/)[0];  // Extract column part (letters)
+//   const rowPart = parseInt(cellAddress.match(/\d+/)[0]);  // Extract row part (numbers)
+
+//   let columnIndex = 0;
+
+//   // Convert the column part (letters) to a number, treating it like base-26 (A=1, B=2, ..., Z=26, AA=27, etc.)
+//   for (let i = 0; i < columnPart.length; i++) {
+//     columnIndex = columnIndex * 26 + (columnPart.charCodeAt(i) - 'A'.charCodeAt(0) + 1);
+//   }
+
+//   // Return row and column as 1-based index
+//   return {
+//     row: rowPart,
+//     column: columnIndex
+//   };
+// }
+
+
+export const evalExpr = (formula, formulaMap, 
+  /**@type {(y:number,x:number)=>string} */
+  getCellText) => {
+  const tokens = tokenize(formula);
+  const tree = buildTree(tokens);
+  const evalNode = (node) => {
+    if (node.type === 'number') {
+      return parseFloat(node.value);
     }
-  }
-  if (subStrs.length > 0) {
-    stack.push(subStrs.join(''));
-  }
-  while (operatorStack.length > 0) {
-    stack.push(operatorStack.pop());
-  }
-  return stack;
-};
-
-const evalSubExpr = (subExpr, cellRender) => {
-  const [fl] = subExpr;
-  let expr = subExpr;
-  if (fl === '"') {
-    return subExpr.substring(1);
-  }
-  let ret = 1;
-  if (fl === '-') {
-    expr = subExpr.substring(1);
-    ret = -1;
-  }
-  if (expr[0] >= '0' && expr[0] <= '9') {
-    return ret * Number(expr);
-  }
-  const [x, y] = expr2xy(expr);
-  return ret * cellRender(x, y);
-};
-
-// evaluate the suffix expression
-// srcStack: <= infixExprToSufixExpr
-// formulaMap: {'SUM': {}, ...}
-// cellRender: (x, y) => {}
-const evalSuffixExpr = (srcStack, formulaMap, cellRender, cellList) => {
-  const stack = [];
-  // console.log(':::::formulaMap:', formulaMap);
-  for (let i = 0; i < srcStack.length; i += 1) {
-    // console.log(':::>>>', srcStack[i]);
-    const expr = srcStack[i];
-    const fc = expr[0];
-    if (expr === '+') {
-      const top = stack.pop();
-      stack.push(numberCalc('+', stack.pop(), top));
-    } else if (expr === '-') {
-      if (stack.length === 1) {
-        const top = stack.pop();
-        stack.push(numberCalc('*', top, -1));
-      } else {
-        const top = stack.pop();
-        stack.push(numberCalc('-', stack.pop(), top));
-      }
-    } else if (expr === '*') {
-      stack.push(numberCalc('*', stack.pop(), stack.pop()));
-    } else if (expr === '/') {
-      const top = stack.pop();
-      stack.push(numberCalc('/', stack.pop(), top));
-    } else if (fc === '=' || fc === '>' || fc === '<') {
-      let top = stack.pop();
-      if (!Number.isNaN(top)) top = Number(top);
-      let left = stack.pop();
-      if (!Number.isNaN(left)) left = Number(left);
-      let ret = false;
-      if (fc === '=') {
-        ret = (left === top);
-      } else if (expr === '>') {
-        ret = (left > top);
-      } else if (expr === '>=') {
-        ret = (left >= top);
-      } else if (expr === '<') {
-        ret = (left < top);
-      } else if (expr === '<=') {
-        ret = (left <= top);
-      }
-      stack.push(ret);
-    } else if (Array.isArray(expr)) {
-      const [formula, len] = expr;
-      const params = [];
-      for (let j = 0; j < len; j += 1) {
-        params.push(stack.pop());
-      }
-      stack.push(formulaMap[formula].render(params.reverse()));
-    } else {
-      if (cellList.includes(expr)) {
-        return 0;
-      }
-      if ((fc >= 'a' && fc <= 'z') || (fc >= 'A' && fc <= 'Z')) {
-        cellList.push(expr);
-      }
-      stack.push(evalSubExpr(expr, cellRender));
-      cellList.pop();
+    if (node.type === 'text') {
+      return node.value;
     }
-    // console.log('stack:', stack);
-  }
-  return stack[0];
+    if (node.type === 'cell') {
+      const [x, y] = expr2xy(node.key);
+      return getCellText(y, x)
+    }
+    if (node.type === 'function') {
+      const func = formulaMap[node.name];
+      if (func) {
+        const params = node.arguments.map(evalNode);
+        return func.render(params);
+      }
+      throw new Error(`Function ${node.name} not found`);
+    }
+    if (node.type === 'binary-expression') {
+      const left = evalNode(node.left);
+      const right = evalNode(node.right);
+      switch (node.operator) {
+        case '+': return numberCalc('+', left, right);
+        case '-': return numberCalc('-', left, right);
+        case '*': return numberCalc('*', left, right);
+        case '/': return numberCalc('/', left, right);
+        case '=': return left == right;
+        case '==': return left == right;
+        case '>': return left > right;
+        case '<': return left < right;
+        case '>=': return left >= right;
+        case '<=': return left <= right;
+        case '<>': return left != right;
+        default: throw new Error(`Unknown operator ${node.operator}`);
+      }
+    }
+    if (node.type === 'unary-expression') {
+      const value = evalNode(node.argument);
+      switch (node.operator) {
+        case '-': return -value;
+        case '+': return +value;
+        default: throw new Error(`Unknown operator ${node.operator}`);
+      }
+    }
+    if (node.type === 'cell-range') {
+      const startCell = node.left.key;
+      const endCell = node.right.key;
+      const rangeValues = [];
+
+      const [startCol, startRow] = expr2xy(startCell);
+      const [endCol, endRow] = expr2xy(endCell);
+
+      // Iterate over the range and collect values
+      for (let row = startRow; row <= endRow; row++) {
+        for (let col = startCol; col <= endCol; col++) {
+          const cellValue = getCellText(row, col);
+          rangeValues.push(cellValue);
+        }
+      }
+
+      return rangeValues;
+    }
+    throw new Error(`Unknown node type ${node.type}`);
+  };
+  //console.log(tree);  
+  return evalNode(tree);
 };
 
 const cellRender = (src, formulaMap, getCellText, cellList = []) => {
   if (src[0] === '=') {
-    const stack = infixExprToSuffixExpr(src.substring(1));
-    if (stack.length <= 0) return src;
-    return evalSuffixExpr(
-      stack,
-      formulaMap,
-      (x, y) => cellRender(getCellText(x, y), formulaMap, getCellText, cellList),
-      cellList,
-    );
+    try {
+      return evalExpr(src.substring(1), formulaMap, getCellText, cellList);
+    }catch(e) {
+      console.error("Error while eval src:");
+      console.error(e);
+      return '#ERR'
+    }
   }
   return src;
 };
 
 export default {
   render: cellRender,
-};
-export {
-  infixExprToSuffixExpr,
 };

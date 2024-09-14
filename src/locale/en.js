@@ -61,6 +61,7 @@ export default {
     time: 'Time',
     datetime: 'Date time',
     duration: 'Duration',
+
   },
   formula: {
     sum: 'Sum',
@@ -71,6 +72,9 @@ export default {
     and: 'AND',
     or: 'OR',
     concat: 'Concat',
+    sin:'SIN',
+    cos:'COS',
+    pi:"PI"
   },
   validation: {
     required: 'it must be required',
