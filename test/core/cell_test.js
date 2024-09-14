@@ -28,7 +28,7 @@ describe('evalExpr', () => {
     };
     const values = { A1: 1, A2: 1 };
     const getCellText = (y, x) => {
-      const key = xy2expr(x,y);
+      const key = xy2expr(x, y);
       return values[key];
     };
     assert.equal(evalExpr('SUM(A1, A2)', formulaMap, getCellText), 2);
@@ -41,7 +41,7 @@ describe('evalExpr', () => {
     };
     const values = { A1: 10, B2: 20, C1: 30, C5: 40, B20: 20 };
     const getCellText = (y, x) => {
-      const key = xy2expr(x,y);
+      const key = xy2expr(x, y);
       return values[key];
     };
     assert.equal(
@@ -56,7 +56,7 @@ describe('evalExpr', () => {
     };
     const values = { A1: 10, B2: 20, B3: 30, C1: 40, C5: 50, B20: 20 };
     const getCellText = (y, x) => {
-      const key = xy2expr(x,y);
+      const key = xy2expr(x, y);
       return values[key];
     };
     assert.equal(evalExpr('((AVERAGE(SUM(A1,B2, B3), C1, C5) + 50) + B20)', formulaMap, getCellText),
@@ -144,14 +144,34 @@ describe('evalExpr', () => {
   });
 
   it('should return 0.6427876096865394 when the value is -COS(I3*(PI()/180)) with I3 = 130', () => {
-      const values = { I3: 130 };
-      const getCellText = (y, x) => {
-          const key = xy2expr(x, y);
-          return values[key];
-      };
-      assert.equal(evalExpr('-COS(I3*(PI()/180))', formulam, getCellText), -Math.cos(130 * (Math.PI / 180)));
-      //assert.equal(evalExpr('(I3*(PI()/180))', formulam, getCellText), (130 * (Math.PI / 180)));
+    const values = { I3: 130 };
+    const getCellText = (y, x) => {
+      const key = xy2expr(x, y);
+      return values[key];
+    };
+    assert.equal(evalExpr('-COS(I3*(PI()/180))', formulam, getCellText), -Math.cos(130 * (Math.PI / 180)));
+    //assert.equal(evalExpr('(I3*(PI()/180))', formulam, getCellText), (130 * (Math.PI / 180)));
   });
+
+  it('should return the correct value for =(0.2166095*A21*(SQRT(C$15/C$16)))/(485*-COS(130*(PI()/180)))', () => {
+    const values = { A21: 10, C15: 100, C16: 25 }; // Example values
+    const getCellText = (y, x) => {
+      const key = xy2expr(x, y);
+      return values[key];
+    };
+    const expectedValue = (0.2166095 * values.A21 * Math.sqrt(values.C15 / values.C16)) / (485 * -Math.cos(130 * (Math.PI / 180)));
+    assert.equal(evalExpr('=(0.2166095*A21*(SQRT(C$15/C$16)))/(485*-COS(130*(PI()/180)))', formulam, getCellText), expectedValue);
+  });
+
+   it('should return the correct value for =(N21*6894.75729/(($H$13-$H$14)*9.8)*3.28083)/1000', () => {
+     const values = { N21: 10, H13: 100, H14: 50 }; // Example values
+     const getCellText = (y, x) => {
+       const key = xy2expr(x, y);
+       return values[key];
+     };
+     const expectedValue = (values.N21 * 6894.75729 / ((values.H13 - values.H14) * 9.8) * 3.28083) / 1000;
+     assert.equal(evalExpr('=(N21*6894.75729/(($H$13-$H$14)*9.8)*3.28083)/1000', formulam, getCellText), expectedValue);
+   });
 
 });
 
@@ -160,8 +180,8 @@ describe('cell', () => {
     it('should eval =SUM(A1,B2, C1, C5) + 50 + B20', () => {
       const values = { A1: 1, B2: 2, C1: 3, C5: 4, B20: 5 };
       const getCellText = (y, x) => {
-          const key = xy2expr(x, y);
-          return values[key];
+        const key = xy2expr(x, y);
+        return values[key];
       };
       assert.equal(cell.render(`=SUM(A1,B2,C1,C5) + 50 + B20`, formulam, getCellText), values.A1 + values.B2 + values.C1 + values.C5 + 50 + values.B20);
     });
