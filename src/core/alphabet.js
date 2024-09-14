@@ -30,10 +30,9 @@ export function stringAt(index) {
  */
 export function indexAt(str) {
   let ret = 0;
-  for(let i = 0; i !== str.length; ++i) ret = 26 * ret + str.charCodeAt(i) - 64;
+  for (let i = 0; i !== str.length; ++i) ret = 26 * ret + str.charCodeAt(i) - 64;
   return ret - 1;
 }
-
 
 // B10 => x,y
 /** translate A1-tag to XY-tag
@@ -43,17 +42,44 @@ export function indexAt(str) {
  * @returns {tagXY}
  */
 export function expr2xy(src) {
-  let x = '';
-  let y = '';
-  for (let i = 0; i < src.length; i += 1) {
-    if (src.charAt(i) >= '0' && src.charAt(i) <= '9') {
-      y += src.charAt(i);
-    } else {
-      x += src.charAt(i);
-    }
-  }
-  return [indexAt(x), parseInt(y, 10) - 1];
+  const { row, column } = excelAddressToIndex(src)
+  return [column - 1, row - 1]
 }
+
+export function indexToExcelAddress({ row, column }) {
+  let columnPart = '';
+
+  // Convert the column index back to letters (base-26 system)
+  while (column > 0) {
+    const remainder = (column - 1) % 26;
+    columnPart = String.fromCharCode(remainder + 'A'.charCodeAt(0)) + columnPart;
+    column = Math.floor((column - 1) / 26);
+  }
+
+  // Return the Excel cell address as a string (column letters + row number)
+  return columnPart + row;
+}
+/**
+ * to 0-based index
+ * */
+export function excelAddressToIndex(cellAddress) {
+  const columnPart = cellAddress.match(/[A-Z]+/)[0];  // Extract column part (letters)
+  const rowPart = parseInt(cellAddress.match(/\d+/)[0]);  // Extract row part (numbers)
+
+  let columnIndex = 0;
+
+  // Convert the column part (letters) to a number, treating it like base-26 (A=1, B=2, ..., Z=26, AA=27, etc.)
+  for (let i = 0; i < columnPart.length; i++) {
+    columnIndex = columnIndex * 26 + (columnPart.charCodeAt(i) - 'A'.charCodeAt(0) + 1);
+  }
+
+  // Return row and column as 1-based index
+  return {
+    row: rowPart,
+    column: columnIndex
+  };
+}
+
 
 /** translate XY-tag to A1-tag
  * @example x,y => B10

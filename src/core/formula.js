@@ -1,3 +1,4 @@
+//@ts-check
 /**
   formula:
     key
@@ -90,7 +91,7 @@ const baseFormulas = [
   {
     key: 'SQRT',
     title: tf("formula.sqrt"),
-    render: ary=>Math.sqrt(Number(arg[0]))
+    render: ary=>Math.sqrt(Number(ary[0]))
   }
 ]
 
