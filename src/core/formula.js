@@ -86,6 +86,11 @@ const baseFormulas = [
     key: "PI",
     title:tf("formula.pi"),
     render: ()=>Math.PI
+  },
+  {
+    key: 'SQRT',
+    title: tf("formula.sqrt"),
+    render: ary=>Math.sqrt(Number(arg[0]))
   }
 ]
 
