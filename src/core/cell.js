@@ -63,12 +63,12 @@ export const evalExpr = (formula, formulaMap,
       const left = evalNode(node.left);
       const right = evalNode(node.right);
       switch (node.operator) {
-        case '+': return numberCalc('+', left, right);
-        case '-': return numberCalc('-', left, right);
-        case '*': return numberCalc('*', left, right);
-        case '/': return numberCalc('/', left, right);
-        case '=': return left == right;
-        case '==': return left == right;
+        case '+': return +left +  +right;  // numberCalc('+', left, right);
+        case '-': return +left -  +right; // numberCalc('-', left, right);
+        case '*': return +left *  +right; // numberCalc('*', left, right);
+        case '/': return +left /  +right; // numberCalc('/', left, right);
+        case '=': return +left == +right;
+        case '==': return left == +right;
         case '>': return left > right;
         case '<': return left < right;
         case '>=': return left >= right;
@@ -78,7 +78,7 @@ export const evalExpr = (formula, formulaMap,
       }
     }
     if (node.type === 'unary-expression') {
-      const value = evalNode(node.argument);
+      const value = evalNode(node.operand);
       switch (node.operator) {
         case '-': return -value;
         case '+': return +value;
@@ -114,7 +114,7 @@ const cellRender = (src, formulaMap, getCellText, cellList = []) => {
     try {
       return evalExpr(src.substring(1), formulaMap, getCellText, cellList);
     }catch(e) {
-      console.error("Error while eval src:");
+      console.error(`Error while eval src: ${src}`);
       console.error(e);
       return '#ERR'
     }

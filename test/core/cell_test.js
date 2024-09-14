@@ -5,6 +5,7 @@ import { xy2expr } from '../../src/core/alphabet'
 import { formulam } from '../../src/core/formula';
 
 describe('evalExpr', () => {
+
   it('should return 2 when the value is 1+1', () => {
     const formulaMap = {};
     const getCellText = (row, col) => row + col;
@@ -134,24 +135,35 @@ describe('evalExpr', () => {
     const getCellText = (row, col) => row + col;
     assert.equal(evalExpr('SUM()', formulaMap, getCellText), 0);
   });
+
+  it('should return 4 when the value is SQRT(16)', () => {
+    const formulaMap = {
+      SQRT: { render: params => Math.sqrt(params[0]) }
+    };
+    assert.equal(evalExpr('SQRT(16)', formulaMap, () => 0), 4);
+  });
+
+  it('should return 0.6427876096865394 when the value is -COS(I3*(PI()/180)) with I3 = 130', () => {
+      const values = { I3: 130 };
+      const getCellText = (y, x) => {
+          const key = xy2expr(x, y);
+          return values[key];
+      };
+      assert.equal(evalExpr('-COS(I3*(PI()/180))', formulam, getCellText), -Math.cos(130 * (Math.PI / 180)));
+      //assert.equal(evalExpr('(I3*(PI()/180))', formulam, getCellText), (130 * (Math.PI / 180)));
+  });
+
 });
 
 describe('cell', () => {
   describe('.render()', () => {
-    it('should return 0 + 2 + 2 + 6 + 49 + 20 when the value is =SUM(A1,B2, C1, C5) + 50 + B20', () => {
-      assert.equal(cell.render('=SUM(A1,B2, C1, C5) + 50 + B20', formulam, (x, y) => x + y), 0 + 2 + 2 + 6 + 50 + 20);
+    it('should eval =SUM(A1,B2, C1, C5) + 50 + B20', () => {
+      const values = { A1: 1, B2: 2, C1: 3, C5: 4, B20: 5 };
+      const getCellText = (y, x) => {
+          const key = xy2expr(x, y);
+          return values[key];
+      };
+      assert.equal(cell.render(`=SUM(A1,B2,C1,C5) + 50 + B20`, formulam, getCellText), values.A1 + values.B2 + values.C1 + values.C5 + 50 + values.B20);
     });
-    // it('should return 50 + 20 when the value is =50 + B20', () => {
-    //   assert.equal(cell.render('=50 + B20', formulam, (x, y) => x + y), 50 + 20);
-    // });
-    // it('should return 2 when the value is =IF(2>1, 2, 1)', () => {
-    //   assert.equal(cell.render('=IF(2>1, 2, 1)', formulam, (x, y) => x + y), 2);
-    // });
-    // it('should return 1 + 500 - 20 when the value is =AVERAGE(A1:A3) + 50 * 10 - B20', () => {
-    //   assert.equal(cell.render('=AVERAGE(A1:A3) + 50 * 10 - B20', formulam, (x, y) => {
-    //     // console.log('x:', x, ', y:', y);
-    //     return x + y;
-    //   }), 1 + 500 - 20);
-    // });
   });
 });
