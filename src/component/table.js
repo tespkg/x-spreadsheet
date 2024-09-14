@@ -76,7 +76,7 @@ export function renderCell(draw, data, rindex, cindex, yoffset = 0) {
     // render text
     let cellText = '';
     if (!data.settings.evalPaused) {
-      cellText = _cell.render(cell.text || '', formulam, (y, x) => (data.getCellTextOrDefault(x, y)));
+      cellText = _cell.render(cell.text || '', formulam, (y,x) => (data.getCellTextOrDefault(y, x)));
     } else {
       cellText = cell.text || '';
     }
