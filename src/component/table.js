@@ -76,7 +76,22 @@ export function renderCell(draw, data, rindex, cindex, yoffset = 0) {
     // render text
     let cellText = '';
     if (!data.settings.evalPaused) {
-      cellText = _cell.render(cell.text || '', formulam, (y,x) => (data.getCellTextOrDefault(y, x)));
+      const getCellText = (y,x)=>{
+        const tgtCell = data.getCell(y, x);
+        if (tgtCell.text && tgtCell.text.startsWith('=')) {
+          if (tgtCell.computation != null) {
+            return tgtCell.computation
+          } else {
+            // maybe stackoverflow if there is cicluar ref between cells
+            tgtCell.computation = _cell.render(tgtCell.text,formulam,getCellText);
+            return tgtCell.computation
+          }
+        }
+        return (data.getCellTextOrDefault(y, x));
+      }
+      cellText = _cell.render(cell.text || '', formulam, getCellText);
+      // cache formula computation
+      cell.computation = cellText;
     } else {
       cellText = cell.text || '';
     }
