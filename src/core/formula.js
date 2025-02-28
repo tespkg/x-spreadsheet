@@ -1,4 +1,4 @@
-//@ts-check
+// @ts-check
 /**
   formula:
     key
@@ -84,15 +84,34 @@ const baseFormulas = [
     render: ary => Math.cos(Number(ary[0])),
   },
   {
-    key: "PI",
-    title:tf("formula.pi"),
-    render: ()=>Math.PI
+    key: 'PI',
+    title: tf('formula.pi'),
+    render: () => Math.PI,
   },
   {
     key: 'SQRT',
-    title: tf("formula.sqrt"),
-    render: ary=>Math.sqrt(Number(ary[0]))
-  }
+    title: tf('formula.sqrt'),
+    render: ary => Math.sqrt(Number(ary[0]))
+  },
+  {
+    key: 'ROUND',
+    title: tf('formula.round'),
+    render: ([number, num_digits]) => {
+      const n = Number(number);
+      const digits = Number(num_digits);
+      const factor = 10 ** digits;
+      return Math.round(n * factor) / factor;
+    },
+  },
+  {
+    key: 'LOG',
+    title: tf('formula.log'),
+    render: ([number, base]) => {
+      const n = Number(number);
+      const b = base !== undefined ? Number(base) : 10;
+      return Math.log(n) / Math.log(b);
+    },
+  },
 ]
 
 const formulas = baseFormulas;
