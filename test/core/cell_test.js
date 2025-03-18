@@ -11,6 +11,17 @@ describe('evalExpr', () => {
     const getCellText = (row, col) => row + col;
     assert.equal(evalExpr('1+1', formulaMap, getCellText), 2);
   });
+
+  it(`should return ${Math.pow(2,3)}`, ()=>{
+    const values = { A1: 2, A2: 3 };
+    const getCellText = (row, col) => {
+      const key = xy2expr(col, row);
+      return values[key];
+    };
+    assert.equal(evalExpr('A1^A2', {}, getCellText), Math.pow(2,3));
+
+  })
+
   it('should return "my name:A1 score:50" when the value is CONCAT("my name:", A1, " score:", 50)', () => {
     const formulaMap = {
       CONCAT: { render: params => params.join('') }

@@ -73,7 +73,8 @@ export const evalExpr = (formula, formulaMap,
         case '<': return left < right;
         case '>=': return left >= right;
         case '<=': return left <= right;
-        case '<>': return left != right;
+        case '<>': return left !== right;
+        case '^': return left ** right;
         default: throw new Error(`Unknown operator ${node.operator}`);
       }
     }
