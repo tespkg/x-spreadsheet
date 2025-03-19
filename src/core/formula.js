@@ -112,6 +112,12 @@ const baseFormulas = [
       return Math.log(n) / Math.log(b);
     },
   },
+  {
+    key: 'ABS',
+    title: tf('formula.abs'),
+    render: ary => (Number.isFinite(+ary[0]))
+      ? Math.abs(Number(ary[0])) : '#VALUE!',
+  },
 ]
 
 const formulas = baseFormulas;

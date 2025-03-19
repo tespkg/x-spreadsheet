@@ -12,15 +12,24 @@ describe('evalExpr', () => {
     assert.equal(evalExpr('1+1', formulaMap, getCellText), 2);
   });
 
-  it(`should return ${Math.pow(2,3)}`, ()=>{
+  it(`should return ${Math.pow(2, 3)}`, () => {
     const values = { A1: 2, A2: 3 };
     const getCellText = (row, col) => {
       const key = xy2expr(col, row);
       return values[key];
     };
-    assert.equal(evalExpr('A1^A2', {}, getCellText), Math.pow(2,3));
-
+    assert.equal(evalExpr('A1^A2', {}, getCellText), Math.pow(2, 3));
   })
+
+  it('should return 5 when the value is ABS(-5)', () => {
+    assert.equal(evalExpr('ABS(-5)', formulam, () => 0), 5);
+  });
+  it('should return 5 when the value is ABS(5)', () => {
+    assert.equal(evalExpr('ABS(5)', formulam, () => 0), 5);
+  });
+  it('should return 0 when the value is ABS(0)', () => {
+    assert.equal(evalExpr('ABS(0)', formulam, () => 0), 0);
+  });
 
   it('should return "my name:A1 score:50" when the value is CONCAT("my name:", A1, " score:", 50)', () => {
     const formulaMap = {
@@ -174,15 +183,15 @@ describe('evalExpr', () => {
     assert.equal(evalExpr('=(0.2166095*A21*(SQRT(C$15/C$16)))/(485*-COS(130*(PI()/180)))', formulam, getCellText), expectedValue);
   });
 
-   it('should return the correct value for =(N21*6894.75729/(($H$13-$H$14)*9.8)*3.28083)/1000', () => {
-     const values = { N21: 10, H13: 100, H14: 50 }; // Example values
-     const getCellText = (y, x) => {
-       const key = xy2expr(x, y);
-       return values[key];
-     };
-     const expectedValue = (values.N21 * 6894.75729 / ((values.H13 - values.H14) * 9.8) * 3.28083) / 1000;
-     assert.equal(evalExpr('=(N21*6894.75729/(($H$13-$H$14)*9.8)*3.28083)/1000', formulam, getCellText), expectedValue);
-   });
+  it('should return the correct value for =(N21*6894.75729/(($H$13-$H$14)*9.8)*3.28083)/1000', () => {
+    const values = { N21: 10, H13: 100, H14: 50 }; // Example values
+    const getCellText = (y, x) => {
+      const key = xy2expr(x, y);
+      return values[key];
+    };
+    const expectedValue = (values.N21 * 6894.75729 / ((values.H13 - values.H14) * 9.8) * 3.28083) / 1000;
+    assert.equal(evalExpr('=(N21*6894.75729/(($H$13-$H$14)*9.8)*3.28083)/1000', formulam, getCellText), expectedValue);
+  });
 
 });
 
